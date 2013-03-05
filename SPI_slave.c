@@ -286,7 +286,7 @@ void InitSPI_Slave(void)
 
 // Interrupt Routine Slave Mode (interrupt controlled)
 // Aufgerufen bei fallender Flanke an INT0
-
+/*
 ISR( INT0_vect )
 {
 	
@@ -540,6 +540,6 @@ ISR( INT0_vect )
 	}						// if (spistatus & (1<<ACTIVE_BIT))
 	
 }		// ISR
-
+*/
 
 

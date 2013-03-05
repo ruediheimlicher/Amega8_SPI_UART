@@ -29,12 +29,6 @@ char window3[] = {"w,3,70,3,30,32,1,Calculated Values"};
 char window4[] = {"w,4,0,35,100,14,1,Terminal Input"};
 char footer[]  = {"w,5,0,49,100,1,0,"};                // no border, no title
 
-char header_colour[] = {"l,0,2,020,000"}; // White text on purple lines 0-2
-char window2_colour[] = {"l,35,48,222,001"}; // white text on blue lines 35-48
-char footer_colour[] = {"l,49,49,000,111"}; // black text on grey line 49
-
-
-
 
 #define USR UCSRA
 
@@ -88,10 +82,8 @@ void uart_init (void)
 
 
 
-void putch (char ch)
+void vga_putch (char ch)
 {
-
-	//while (UART_PIN & (1<<RTS_PIN));
    
 #ifdef USR
 	while(!(USR & (1<<UDRE))); //transmit buffer is ready to receive data
@@ -108,11 +100,11 @@ void putch (char ch)
 }
 
 // Einen 0-terminierten String übertragen.
-void puts (const char *s)
+void vga_puts(const char *s)
 {
    do
    {
-      putch (*s);
+      vga_putch (*s);
    }
    while (*s++);
 }
@@ -122,11 +114,11 @@ void vga_command(const char *command_str)
 {
    // Function to easily send command to VGA board
   
-   putch('^');
-   putch('[');          // send escape sequence
+   vga_putch('^');
+   vga_putch('[');          // send escape sequence
 
-   puts(command_str);   // send Command string
-   putch(0x0D);
+   vga_puts(command_str);   // send Command string
+   vga_putch(0x0D);
 
    // Most commands don't take very long, but need a small delay to complete
    // The Reboot cammand needs 2 seconds
@@ -145,22 +137,12 @@ void vga_start(void)
 
    vga_command("r");          // reboot VGA board
    vga_command(header);       // Create header
-   vga_command(header_colour);
    vga_command(window2);       // Create window 1
    vga_command("f,1");
-   puts("HomeCentral Rueti");
+   vga_puts("HomeCentral Rueti");
 }
         
 
-void clrscr(void)
-{
-   delay_ms(1);
-   putch('\033');
-   putch('[');
-   
-   putch('2');
-   putch('J');
-}
 
 uint8_t gotoxy(uint8_t x, uint8_t y)
 {
@@ -169,20 +151,20 @@ uint8_t gotoxy(uint8_t x, uint8_t y)
       return 1;
    }
    
-   putch('^');
-   putch('[');
-   putch('p');
-   putch(',');
+   vga_putch('^');
+   vga_putch('[');
+   vga_putch('p');
+   vga_putch(',');
    
-   putch((x/10)+'0');
-   putch((x%10)+'0');
+   vga_putch((x/10)+'0');
+   vga_putch((x%10)+'0');
    
-   putch(',');
-   putch((y/10)+'0');
-   putch((y%10)+'0');
-   putch(0);
+   vga_putch(',');
+   vga_putch((y/10)+'0');
+   vga_putch((y%10)+'0');
+   vga_putch(0);
 
-   putch(0xD0);
+   vga_putch(0xD0);
   
    return 0;
 }
@@ -198,7 +180,7 @@ void putint(uint8_t zahl)
       string[i]=((zahl % 10) +'0');      // Modulo div, add ASCII-Code '0'
       zahl /= 10;
    }
-   puts(string);
+   vga_puts(string);
 }
 
 void putint_right(uint8_t zahl)
@@ -212,7 +194,7 @@ void putint_right(uint8_t zahl)
       string[2]= '0';
       string[1]= ' ';
       string[0]= ' ';
-      puts(string);
+      vga_puts(string);
       return;
    }
    for(i=2; i>=0; i--)
@@ -227,7 +209,7 @@ void putint_right(uint8_t zahl)
       }
       zahl /= 10;
    }
-   puts(string);
+   vga_puts(string);
 }
 
 void putint2(uint8_t zahl)
@@ -238,7 +220,7 @@ void putint2(uint8_t zahl)
    {
       string[1]= '0';
       string[0]= ' ';
-      puts(string);
+      vga_puts(string);
       return;
    }
 
@@ -254,7 +236,7 @@ void putint2(uint8_t zahl)
       string[i]=((zahl % 10) +'0');         // Modulo rechnen, dann den ASCII-Code von '0' addieren
       zahl /= 10;
    }
-   puts(string);
+   vga_puts(string);
 }
 
 void putint2_right(uint8_t zahl)
@@ -279,7 +261,7 @@ void putint2_right(uint8_t zahl)
       }
       zahl /= 10;
    }
-   puts(string);
+   vga_puts(string);
 }
 
 void putint1(uint8_t zahl)
@@ -292,7 +274,7 @@ void putint1(uint8_t zahl)
    }
    string[1]='\0';                       // String Terminator
    string[0]=(zahl +'0');         // Modulo rechnen, dann den ASCII-Code von '0' addieren
-   puts(string);
+   vga_puts(string);
 }
 
 
@@ -307,107 +289,61 @@ void setFeld(uint8_t number, uint8_t left, uint8_t top, uint8_t width, uint8_t h
     minheight = 1. Keine border gezeigt. Titel abgeschnitten
     
     */
-   putch('^');
-   putch('[');
-   putch('w');
-   putch(',');
-   putch((number%10)+'0');
-   putch(',');
+   vga_putch('^');
+   vga_putch('[');
+   vga_putch('w');
+   vga_putch(',');
+   vga_putch((number%10)+'0');
+   vga_putch(',');
    
-   putch((left/10)+'0');
-   putch((left%10)+'0');
-   putch(',');
+   vga_putch((left/10)+'0');
+   vga_putch((left%10)+'0');
+   vga_putch(',');
 
-   putch((top/10)+'0');
-   putch((top%10)+'0');
-   putch(',');
+   vga_putch((top/10)+'0');
+   vga_putch((top%10)+'0');
+   vga_putch(',');
 
-   //putch((width/10)+'0');
+   //vga_putch((width/10)+'0');
    if (width >99)
    {
       width =99;
    }
    
-   putch((width/10)+'0');
-   putch((width%10)+'0');
-   putch(',');
+   vga_putch((width/10)+'0');
+   vga_putch((width%10)+'0');
+   vga_putch(',');
 
-   putch((height/10)+'0');
-   //putch(1+'0');
-   putch((height%10)+'0');
-   putch(',');
+   vga_putch((height/10)+'0');
+   //vga_putch(1+'0');
+   vga_putch((height%10)+'0');
+   vga_putch(',');
   
-   putch(border%10+'0');
-   putch(',');
+   vga_putch(border%10+'0');
+   vga_putch(',');
    if (strlen(title))
    {
-      puts(title);
+      vga_puts(title);
    }
    else
       {
-         puts("");
+         vga_puts("");
       }
  
-   putch(0xD0);
+   vga_putch(0xD0);
 
 }
 
 
 
 
-void _textcolor(int color)
-{
-   putch('\033');
-   putch('[');
-   if (color & 0x8)
-   {
-      putch('1');
-   }
-   else
-   {
-      putch('2');
-   }
-   
-   putch('m');
-   putch('\033');
-   
-   putch('[');
-   putch('3');
-   putch(((color&0x7)%10)+'0');
-   putch('m');
-}
-
-
-void _textbackground(int color)
-{
-   putch('\033');
-   putch('[');
-   if (color & 0x8)
-      putch('5');
-   else putch('6');
-   putch('m');
-   
-   putch('\033');
-   putch('[');
-   putch('4');
-   putch((color&0x7)+'0');
-   putch('m');
-}
 
 void newline(void)
 {
-   putch(0x0D);
+   vga_putch(0x0D);
    
 }
 
-void cursoroff(void)
-{
-   putch('\033');
-   putch('[');
-   putch('2');
-   putch('5');
-   putch('l');
-}
 
 
 

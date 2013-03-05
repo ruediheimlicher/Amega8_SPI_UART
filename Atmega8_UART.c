@@ -59,23 +59,23 @@ void setHomeCentral(void)
    //vga_command(header);       // Create header
    setFeld(1,0,0,100,3,1,"");
    vga_command("f,1");
-   puts("Home Central Rueti");
+   vga_puts("Home Central Rueti");
    
 
    posy+= 3;
    setFeld(2,0,posy,100,6,1,""); // Heizung
    vga_command("f,2");
-   puts("Heizung");
+   vga_puts("Heizung");
 
    posy+= 6;
    setFeld(3,0,posy,100,3,1,""); // Werkstatt
    vga_command("f,3");
-   puts("Werkstatt");
+   vga_puts("Werkstatt");
 
    posy+= 3;
    setFeld(4,0,posy,100,3,1,""); // WoZi
    vga_command("f,1");
-   puts("WoZi");
+   vga_puts("WoZi");
 
    
 
@@ -113,62 +113,7 @@ return 12;
 return -1;
 }
 
-void readSR (void)
-{
-	// Schalterstellung in SR laden
-	SR_PORT &= ~(1<<SR_LOAD_PIN); // PL> LO
-	_delay_us(10);
-	SR_PORT |= (1<<SR_LOAD_PIN); // PL> HI
-	_delay_us(1);
-	uint8_t i=0;
-	Tastaturabfrage=0;
-   return;
-	//Read_Device=0x00;
-	//Daten aus SR schieben
-	for (i=0;i<8;i++)
-	{
-		//uint8_t pos=15-i;
-		// Bit lesen
-		if (SR_PIN & (1<<SR_DATA_PIN)) // PIN ist Hi, OFF
-		{
-			//Bit is HI
-			if (i<8) // Byte 1
-			{
-				Tastaturabfrage |= (0<<(i)); // auf Device i soll geschrieben werden
-			}
-         /*
-			else
-			{
-				Read_Device |= (0<<(i-8));	// von Device i soll gelesen werden
-			}
-			*/
-			
-		}
-		else
-		{
-			//Bit is LO
-			if (i<8) // Byte 1
-			{
-				Tastaturabfrage |= (1<<i); // auf Device i soll geschrieben werden
-			}
-         /*
-			else
-			{
-				Read_Device |= (1<<(i-8));	// von Device i soll gelesen werden
-			}
-			*/
-		}
-		
-		// SR weiterschieben
-		
-		SR_PORT &= ~(1<<SR_CLK_PIN); // CLK LO
-		_delay_us(10);
-		SR_PORT |= (1<<SR_CLK_PIN); // CLK HI, shift
-		_delay_us(10);
-		
-	} // for i
-	
-}
+
 
 
 void slaveinit(void)
@@ -220,7 +165,10 @@ ISR( INT1_vect )
 	
 	if (spistatus & (1<<ACTIVE_BIT))									// CS ist LO, Interrupt ist OK
 	{
-      BitCounter++;
+      
+      uartstatus |= (1<<SUCCESS_BIT);
+      return;
+      //BitCounter++;
       _delay_us(10);																	// PIN lesen:
 		
 		if (spistatus & (1<<STARTDATEN_BIT))						// out_startdaten senden, in_startdaten laden
@@ -244,6 +192,7 @@ ISR( INT1_vect )
 			
 			// Output laden
          
+         /*
 			if (out_startdaten & (1<<(7-bitpos)))
 			{
 				SPI_CONTROL_PORT |= (1<<SPI_CONTROL_MISO);
@@ -252,7 +201,7 @@ ISR( INT1_vect )
 			{
 				SPI_CONTROL_PORT &= ~(1<<SPI_CONTROL_MISO);
 			}
-			
+			*/
 			
 			bitpos++;
          
@@ -292,6 +241,7 @@ ISR( INT1_vect )
 			
 			
 			// Output laden
+         /*
 			if (out_lbdaten & (1<<(7-bitpos)))						// bit ist HI
 			{
 				SPI_CONTROL_PORT |= (1<<SPI_CONTROL_MISO);
@@ -300,7 +250,7 @@ ISR( INT1_vect )
 			{
 				SPI_CONTROL_PORT &= ~(1<<SPI_CONTROL_MISO);
 			}
-			
+			*/
 			bitpos++;
 			
 			
@@ -335,6 +285,7 @@ ISR( INT1_vect )
 			
 			
 			// Output laden
+         /*
 			if (out_hbdaten & (1<<(7-bitpos)))						// bit ist HI
 			{
 				SPI_CONTROL_PORT |= (1<<SPI_CONTROL_MISO);
@@ -343,7 +294,7 @@ ISR( INT1_vect )
 			{
 				SPI_CONTROL_PORT &= ~(1<<SPI_CONTROL_MISO);
 			}
-			
+			*/
 			bitpos++;
 			
 			if (bitpos>=8)	// Byte fertig
@@ -380,6 +331,7 @@ ISR( INT1_vect )
 			
 			// Output laden
          //			if (out_enddaten & (1<<(7-bitpos)))						// bit ist HI
+         /*
 			if (complement & (1<<(7-bitpos)))						// bit ist HI
 			{
 				SPI_CONTROL_PORT |= (1<<SPI_CONTROL_MISO);
@@ -388,7 +340,7 @@ ISR( INT1_vect )
 			{
 				SPI_CONTROL_PORT &= ~(1<<SPI_CONTROL_MISO);
 			}
-			
+			*/
 			
 			bitpos++;
 			
@@ -397,9 +349,14 @@ ISR( INT1_vect )
 			{
 				spistatus &= ~(1<<ENDDATEN_BIT);						// Bit fuer Enddaten zuruecksetzen
 				bitpos=0;
+            lcd_gotoxy(19,0);
+            lcd_putc('+');
+            spistatus |= (1<<SUCCESS_BIT);
+            uartstatus |= (1<<SUCCESS_BIT);
+            /*
 				if (out_startdaten + in_enddaten==0xFF)
 				{
-					//lcd_putc('+');
+					lcd_putc('+');
 					//spistatus |= (1<<SUCCESS_BIT);					// Datenserie korrekt geladen
 					
 				}
@@ -409,6 +366,7 @@ ISR( INT1_vect )
 					//spistatus &= ~(1<<SUCCESS_BIT);					// Datenserie nicht korrekt geladen
 					errCounter++;
 				}
+             */
 				// 24.6.2010
             //				out_startdaten=0xC0; ergab nicht korrekte Pruefsumme mit in_enddaten
             
@@ -441,6 +399,7 @@ ISR( INT1_vect )
 			
 			
 			// Output laden
+         /*
 			if (outbuffer[ByteCounter] & (1<<(7-bitpos)))		// bit ist HI
 			{
 				SPI_CONTROL_PORT |= (1<<SPI_CONTROL_MISO);
@@ -449,7 +408,7 @@ ISR( INT1_vect )
 			{
 				SPI_CONTROL_PORT &= ~(1<<SPI_CONTROL_MISO);
 			}
-			
+			*/
 			
 			bitpos++;
 			
@@ -503,7 +462,7 @@ int main (void)
    
 #pragma mark while
   // OSZIA_HI;
-   char teststring[] = {"p,10,12"};
+   //char teststring[] = {"p,10,12"};
    
    
    initADC(TASTATURKANAL);
@@ -515,9 +474,10 @@ int main (void)
    startcounter = 0;
    linecounter=0;
    uint8_t lastrand=rand();
-   srand(1);
+   //srand(1);
    sei();
-   uint8_t x=0;
+   uint8_t incounter=0;
+   //uint8_t x=0;
 	while (1)
 	{
 		loopCount0 ++;
@@ -530,16 +490,43 @@ int main (void)
 			if ((loopCount1 >0x01FF) )//&& (!(Programmstatus & (1<<MANUELL))))
 			{
              LOOPLED_PORT ^= (1<<LOOPLED_PIN);
+            if ((uartstatus & (1<< SUCCESS_BIT))&& (SPI_CONTROL_PORTPIN & (1<<SPI_CONTROL_CS_HC)))
+            {
+               incounter++;
+               lcd_gotoxy(0,0);
+               lcd_puts("OK\0");
+               //lcd_puthex(in_startdaten);
+               lcd_putc(' ');
+               lcd_putint(incounter);
+               cli();
+               delay_ms(100);
+               //vga_command("f,2");
+               //vga_putch('*');
+               //putint(254);
+               
+               
+               uartstatus &= ~(1<< SUCCESS_BIT);
+               
+              
+               sei();
+               
+            }
+            else
+            {
+               //lcd_gotoxy(0,0);
+               //lcd_puts("  \0");
+               
+            }
              {
-             lcd_gotoxy(15,3);
-            lcd_putint(BitCounter);
+             //lcd_gotoxy(15,3);
+            //lcd_putint(BitCounter);
                 /*
                loopCount2++;
                vga_command("f,2");
                //puts("HomeCentral ");
-                puts("Tastenwert ");
+                vga_puts("Tastenwert ");
                putint(Tastenwert);
-               putch(' ');
+               vga_putch(' ');
               newline();
                  */
                 /*
@@ -558,14 +545,14 @@ int main (void)
                      linecounter+=1;
                      gotoxy(8,linecounter);
                      vga_command("f,2");
-                     puts("Stop");
+                     vga_puts("Stop");
                      putint_right(linecounter);
-                     putch(' ');
+                     vga_putch(' ');
                      putint(Tastenwert);
                      //newline();
                      vga_command("f,1");
                      vga_command("e");
-                     puts("Daten");
+                     vga_puts("Daten");
                      putint_right(linecounter);
                      vga_command("f,2");
                      //vga_command("e");
@@ -639,11 +626,12 @@ int main (void)
                   lcd_putc('*');
                }
                
-               lcd_gotoxy(14,1);
+               //lcd_gotoxy(14,1);
                
-               lcd_putint(linecounter);
-               lcd_putc(' ');
-               lcd_putint((uint8_t)rand()%40);
+               
+               //lcd_putint(linecounter);
+               //lcd_putc(' ');
+               //lcd_putint((uint8_t)rand()%40);
                
                switch (Taste)
                {
@@ -652,19 +640,19 @@ int main (void)
                      vga_command("f,2");
                      gotoxy(0,2);
                      vga_command("f,2");
-                     puts("Brenner: ");
+                     vga_puts("Brenner: ");
                   }break;
                   case 2:
                   {
                      vga_command("f,3");
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch(' ');
+                     vga_putch(' ');
 
                      cursory--;
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch('>');
+                     vga_putch('>');
                      
                   }break;
                   case 3:
@@ -681,11 +669,11 @@ int main (void)
                      vga_command("f,3");
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch(' ');
+                     vga_putch(' ');
                      cursorx-=10;
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch('>');
+                     vga_putch('>');
                      }
                      }
 
@@ -695,7 +683,7 @@ int main (void)
                      vga_command("f,3");
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch('>');
+                     vga_putch('>');
 
                   }break;
                   case 6:
@@ -708,12 +696,12 @@ int main (void)
                         vga_command("f,3");
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch(' ');
+                     vga_putch(' ');
                      
                      cursorx+=10;
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch('>');
+                     vga_putch('>');
                      }
                      }
                   }break;
@@ -722,7 +710,7 @@ int main (void)
                      
                      setFeld(3,70,3,30,32,1,"");
                      vga_command("f,3");
-                     //putch('x');
+                     //vga_putch('x');
                      //lcd_putc('+');
                      
                   }break;
@@ -731,12 +719,12 @@ int main (void)
                      vga_command("f,3");
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch(' ');
+                     vga_putch(' ');
 
                      cursory++;
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch('>');
+                     vga_putch('>');
 
                   }break;
                   case 9:
@@ -753,24 +741,24 @@ int main (void)
                      vga_command("e");
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch(' ');
+                     vga_putch(' ');
                      cursorx = CURSORX;
                      cursory = CURSORY;
                      gotoxy(CURSORX+1,CURSORY);
                      vga_command("f,3");
-                     puts("Alpha");
+                     vga_puts("Alpha");
                      gotoxy(CURSORX+1,CURSORY+1);
                      vga_command("f,3");
-                     puts("Beta");
+                     vga_puts("Beta");
                      gotoxy(CURSORX+1,CURSORY+2);
                      vga_command("f,3");
-                     puts("Gamma");
+                     vga_puts("Gamma");
                      gotoxy(CURSORX+1,CURSORY+3);
                      vga_command("f,3");
-                     puts("Delta");
+                     vga_puts("Delta");
                      gotoxy(cursorx,cursory);
                      vga_command("f,3");
-                     putch('>');
+                     vga_putch('>');
 
                   }break;
                      
@@ -781,16 +769,16 @@ int main (void)
                
                lastrand = rand();
                vga_command("f,2");
-               //putch(' ');
+               //vga_putch(' ');
                
                //gotoxy(4,linecounter);
                //lcd_gotoxy(16,1);
                //lcd_putint(erg);
                /*
                putint(linecounter);
-               putch(' ');
+               vga_putch(' ');
                putint_right(Tastenwert);
-               putch(' ');
+               vga_putch(' ');
                putint_right(Taste);
                */
                //newline();
@@ -805,7 +793,7 @@ int main (void)
          
          }
       NEXT:
-         x=0;
+         //x=0;
          sei();
          //
 		}
@@ -841,12 +829,12 @@ int main (void)
 				wdt_reset();
 				SPI_Call_count0++;
 				// Eingang von Interrupt-Routine, Daten von Webserver
-				lcd_gotoxy(19,0);
-				lcd_putc(' ');
+				//lcd_gotoxy(19,0);
+				//lcd_putc(' ');
 				
 				// in lcd verschoben
-				//lcd_clr_line(2);
-				//lcd_gotoxy(0,2);
+				lcd_clr_line(2);
+				lcd_gotoxy(0,2);
 				
 				// Eingang anzeigen
 				lcd_puts("iW \0");
@@ -856,7 +844,7 @@ int main (void)
 				lcd_puthex(in_lbdaten);
 				lcd_putc(' ');
 				uint8_t j=0;
-				for (j=0;j<1;j++)
+				for (j=0;j<2;j++)
 				{
 					//lcd_putc(' ');
 					lcd_puthex(inbuffer[j]);
@@ -876,11 +864,12 @@ int main (void)
             
 				lcd_gotoxy(19,0);
 				lcd_putc(' ');
-				lcd_gotoxy(19,0);
+				
 				if (ByteCounter == SPI_BUFSIZE-1) // Uebertragung war vollstaendig
 				{
 					if (out_startdaten + in_enddaten==0xFF)
 					{
+                  lcd_gotoxy(19,2);
 						lcd_putc('+');
 						spistatus |= (1<<SUCCESS_BIT); // Bit fuer vollstaendige und korrekte  Uebertragung setzen
 						lcd_gotoxy(19,0);
@@ -927,8 +916,8 @@ int main (void)
 					lcd_puts("ER2\0");
                lcd_putc(' ');
                lcd_puthex(ByteCounter);
-               lcd_putc(' ');
-               lcd_puthex(BitCounter);
+               //lcd_putc(' ');
+               //lcd_puthex(BitCounter);
 
                /*
 					lcd_putc(' ');
@@ -1050,6 +1039,8 @@ int main (void)
 				// Anzeige, das  rxdata vorhanden ist
 				lcd_gotoxy(19,0);
 				lcd_putc('$');
+            lcd_gotoxy(19,1);
+				lcd_putc(' ');
            
 				
 				
