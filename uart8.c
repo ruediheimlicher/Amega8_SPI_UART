@@ -45,7 +45,10 @@ void uart_init (void)
     */
    UBRRH = (((FOSC/16)/BAUD-1)>>8);  // The high byte, UBRR0H
    UBRRL = ((FOSC/16)/BAUD-1);       // The low byte, UBRR0L
-      
+   
+   
+   
+   
    // Interrupts kurz deaktivieren
    
    // UART Receiver und Transmitter anschalten, Receive-Interrupt aktivieren
